@@ -1,0 +1,2169 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RSB Webapps</title>
+
+    <!-- CodeMirror 5 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/dracula.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/htmlmixed/htmlmixed.min.js"></script>
+
+    <!-- QRCode.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f0f2f5;
+            color: #333;
+            min-height: 100vh;
+        }
+
+        header {
+            background: linear-gradient(135deg, #2563eb, #3b82f6);
+            color: #fff;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(37,99,235,0.3);
+        }
+
+        header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .settings-btn {
+            background: none;
+            border: 2px solid rgba(255,255,255,0.3);
+            color: #fff;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .settings-btn:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: rgba(255,255,255,0.6);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+
+        /* Settings Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: #fff;
+            border-radius: 12px;
+            padding: 2rem;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal h2 {
+            margin-bottom: 1.5rem;
+            color: #1a1a2e;
+        }
+
+        .modal h3 {
+            margin-top: 1.5rem;
+            margin-bottom: 0.8rem;
+            color: #1a1a2e;
+            font-size: 1rem;
+            border-top: 1px solid #e0e0e0;
+            padding-top: 1rem;
+        }
+
+        .modal label {
+            display: block;
+            margin-bottom: 0.3rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #555;
+        }
+
+        .modal input {
+            width: 100%;
+            padding: 0.6rem 0.8rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            margin-bottom: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        .modal input:focus {
+            outline: none;
+            border-color: #4a6cf7;
+        }
+
+        .modal .help-text {
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            font-size: 0.82rem;
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .modal .help-text strong {
+            color: #333;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 0.8rem;
+            justify-content: flex-end;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #4a6cf7;
+            color: #fff;
+        }
+
+        .btn-primary:hover { background: #3a5ce5; }
+
+        .btn-success {
+            background: #22c55e;
+            color: #fff;
+        }
+
+        .btn-success:hover { background: #16a34a; }
+
+        .btn-danger {
+            background: #ef4444;
+            color: #fff;
+        }
+
+        .btn-danger:hover { background: #dc2626; }
+
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #333;
+        }
+
+        .btn-secondary:hover { background: #d1d5db; }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Editor Section */
+        .editor-section {
+            background: #fff;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        }
+
+        .editor-section h2 {
+            margin-bottom: 1rem;
+            color: #1a1a2e;
+            font-size: 1.2rem;
+        }
+
+        .filename-row {
+            display: flex;
+            gap: 0.8rem;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .filename-row input {
+            flex: 1;
+            padding: 0.6rem 0.8rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 0.95rem;
+        }
+
+        .filename-row input:focus {
+            outline: none;
+            border-color: #4a6cf7;
+        }
+
+        .filename-row span {
+            color: #888;
+            font-weight: 600;
+        }
+
+        .CodeMirror {
+            height: 400px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .editor-buttons {
+            display: flex;
+            gap: 0.8rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        /* Description box in editor */
+        .desc-box {
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .desc-box.active { display: block; }
+
+        .desc-box label {
+            display: block;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: #555;
+            margin-bottom: 0.3rem;
+        }
+
+        .desc-box input, .desc-box textarea, .desc-box select {
+            width: 100%;
+            padding: 0.5rem 0.7rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-family: inherit;
+            margin-bottom: 0.6rem;
+            background: #fff;
+        }
+
+        .desc-box textarea { resize: vertical; height: 50px; }
+
+        .desc-row { display: flex; gap: 0.8rem; }
+        .desc-row > div { flex: 1; }
+
+        /* Preview */
+        .preview-section {
+            background: #fff;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+            display: none;
+        }
+
+        .preview-section.active { display: block; }
+
+        .preview-section h2 {
+            margin-bottom: 1rem;
+            color: #1a1a2e;
+            font-size: 1.2rem;
+        }
+
+        .preview-frame {
+            width: 100%;
+            height: 400px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+        }
+
+        /* App List */
+        .app-list-section {
+            background: #fff;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        }
+
+        .app-list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .app-list-header h2 {
+            color: #1a1a2e;
+            font-size: 1.2rem;
+            margin: 0;
+        }
+
+        .app-list-controls {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .view-toggle {
+            display: flex;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .view-toggle button {
+            padding: 0.35rem 0.7rem;
+            border: none;
+            background: #fff;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.2s;
+        }
+
+        .view-toggle button:hover {
+            background: #f0f1f3;
+        }
+
+        .view-toggle button.active {
+            background: #4a6cf7;
+            color: #fff;
+        }
+
+        .filter-bar {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-bar input {
+            flex: 1;
+            min-width: 200px;
+            padding: 0.5rem 0.8rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        .filter-bar input:focus {
+            outline: none;
+            border-color: #4a6cf7;
+        }
+
+        .filter-bar select {
+            padding: 0.5rem 0.8rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            background: #fff;
+            cursor: pointer;
+        }
+
+        .app-list-empty {
+            text-align: center;
+            color: #999;
+            padding: 2rem;
+        }
+
+        .app-item {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            padding: 0.8rem 1rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            transition: background 0.15s;
+        }
+
+        .app-item:hover { background: #f9fafb; }
+
+        .app-item-info { flex: 1; min-width: 0; }
+
+        .app-item-name {
+            font-weight: 600;
+            color: #1a1a2e;
+        }
+
+        .app-item-name a {
+            color: #4a6cf7;
+            text-decoration: none;
+        }
+
+        .app-item-name a:hover { text-decoration: underline; }
+
+        .app-item-desc {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 0.25rem;
+        }
+
+        .app-item-date {
+            font-size: 0.8rem;
+            color: #999;
+            margin-top: 0.2rem;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-right: 0.3rem;
+        }
+
+        .badge-fach {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .badge-stufe {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge-kategorie {
+            background: #ede9fe;
+            color: #6d28d9;
+        }
+
+        .app-item-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            flex-shrink: 0;
+            margin-left: 0.5rem;
+        }
+
+        .badge-kategorie-editable {
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .badge-kategorie-editable:hover {
+            outline: 2px solid #6d28d9;
+            outline-offset: 1px;
+        }
+
+        .btn-sm {
+            padding: 0.35rem 0.7rem;
+            font-size: 0.8rem;
+            border-radius: 6px;
+        }
+
+        /* QR Modal */
+        .qr-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.85);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .qr-modal-overlay.active {
+            display: flex;
+        }
+
+        .qr-modal {
+            background: #fff;
+            border-radius: 16px;
+            padding: 2rem 2.5rem;
+            text-align: center;
+            box-shadow: 0 16px 48px rgba(0,0,0,0.3);
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .qr-modal h3 {
+            margin-bottom: 1rem;
+            color: #1e293b;
+            font-size: 1.1rem;
+            word-break: break-all;
+        }
+
+        .qr-modal-code {
+            display: inline-block;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .qr-modal-url {
+            font-size: 0.85rem;
+            color: #4a6cf7;
+            word-break: break-all;
+            margin-bottom: 1rem;
+        }
+
+        .qr-modal-url a {
+            color: #4a6cf7;
+            text-decoration: none;
+        }
+
+        .qr-modal-url a:hover { text-decoration: underline; }
+
+        .qr-modal-actions {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+        }
+
+        /* Deploy Success Modal */
+        @keyframes slideInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .deploy-success-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 1500;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .deploy-success-overlay.active {
+            display: flex;
+        }
+
+        .deploy-success-modal {
+            background: #fff;
+            border-radius: 16px;
+            padding: 2rem 2.5rem;
+            text-align: center;
+            box-shadow: 0 16px 48px rgba(0,0,0,0.3);
+            max-width: 420px;
+            width: 90%;
+            animation: slideInUp 0.3s ease-out;
+        }
+
+        .deploy-success-icon {
+            width: 64px;
+            height: 64px;
+            background: #22c55e;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 2rem;
+            color: #fff;
+        }
+
+        .deploy-success-modal h3 {
+            color: #166534;
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .deploy-success-filename {
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 1rem;
+            word-break: break-all;
+        }
+
+        .deploy-success-qr {
+            display: inline-block;
+            padding: 0.5rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .deploy-success-url {
+            font-size: 0.85rem;
+            color: #4a6cf7;
+            word-break: break-all;
+            margin-bottom: 0.5rem;
+        }
+
+        .deploy-success-url a {
+            color: #4a6cf7;
+            text-decoration: none;
+        }
+
+        .deploy-success-url a:hover { text-decoration: underline; }
+
+        .deploy-success-actions {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        /* Folder View */
+        .folder-section {
+            margin-bottom: 0.5rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .folder-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.8rem 1rem;
+            background: #f8f9fa;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.15s;
+        }
+
+        .folder-header:hover {
+            background: #f0f1f3;
+        }
+
+        .folder-arrow {
+            font-size: 0.75rem;
+            color: #888;
+            width: 1rem;
+            text-align: center;
+        }
+
+        .folder-icon {
+            font-size: 1.15rem;
+        }
+
+        .folder-name {
+            font-weight: 600;
+            color: #1a1a2e;
+            flex: 1;
+        }
+
+        .folder-count {
+            color: #888;
+            font-size: 0.85rem;
+        }
+
+        .folder-content {
+            padding: 0.5rem;
+        }
+
+        /* Status messages */
+        .status {
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-weight: 500;
+            display: none;
+        }
+
+        .status.active { display: block; }
+
+        .status.success {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+
+        .status.error {
+            background: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+
+        .status.info {
+            background: #eff6ff;
+            color: #1e40af;
+            border: 1px solid #bfdbfe;
+        }
+
+        /* Loading spinner */
+        .spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            vertical-align: middle;
+            margin-right: 0.4rem;
+        }
+
+        .spinner-dark {
+            border: 3px solid rgba(0,0,0,0.1);
+            border-top-color: #4a6cf7;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Not configured banner */
+        .setup-banner {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            color: #856404;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .setup-banner button {
+            margin-left: 0.5rem;
+        }
+
+        .app-count {
+            font-size: 0.85rem;
+            color: #888;
+            font-weight: normal;
+        }
+
+        /* Lehrplan View */
+        .lehrplan-level-1 { margin-left: 0; }
+        .lehrplan-level-2 { margin-left: 1.2rem; }
+        .lehrplan-level-3 { margin-left: 2.4rem; }
+        .lehrplan-stichworte {
+            font-size: 0.75rem;
+            color: #aaa;
+            font-style: italic;
+            margin-left: 0.5rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container { padding: 1rem; }
+            .CodeMirror { height: 300px; }
+            .filename-row { flex-direction: column; }
+            .app-item { flex-direction: column; gap: 0.5rem; align-items: flex-start; }
+            .app-item-actions { width: 100%; justify-content: flex-end; margin-left: 0; flex-wrap: wrap; }
+            .desc-row { flex-direction: column; gap: 0; }
+            .deploy-success-actions { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>RSB Webapps</h1>
+    <button class="settings-btn" onclick="openSettings()">&#9881; Einstellungen</button>
+</header>
+
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settingsModal">
+    <div class="modal">
+        <h2>Einstellungen</h2>
+        <label for="inputUsername">GitHub-Benutzername</label>
+        <input type="text" id="inputUsername" placeholder="z.B. mein-username">
+
+        <label for="inputRepo">Repository-Name</label>
+        <input type="text" id="inputRepo" placeholder="z.B. rsb-webapps" value="rsb-webapps">
+
+        <label for="inputToken">Personal Access Token (PAT)</label>
+        <input type="password" id="inputToken" placeholder="ghp_...">
+
+        <div class="help-text">
+            <strong>So erstellst du einen Fine-grained PAT:</strong><br>
+            1. GitHub &rarr; Settings &rarr; Developer Settings &rarr; Fine-grained tokens<br>
+            2. &laquo;Generate new token&raquo; klicken<br>
+            3. Repository access: &laquo;Only select repositories&raquo; &rarr; dein Repo ausw&auml;hlen<br>
+            4. Permissions: &laquo;Contents&raquo; &rarr; Read and Write<br>
+            5. Token kopieren und hier einf&uuml;gen
+        </div>
+
+        <h3>KI-Beschreibung (optional)</h3>
+        <label for="inputClaudeKey">Anthropic API Key</label>
+        <input type="password" id="inputClaudeKey" placeholder="sk-ant-...">
+        <div class="help-text">
+            <strong>F&uuml;r automatische App-Beschreibungen:</strong><br>
+            Wenn ein API-Key hinterlegt ist, kann beim Deployen automatisch eine Beschreibung (Fach, Jahrgangsstufe, Kurzbeschreibung) per Claude generiert werden.<br><br>
+            Key erstellen: <a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com</a>
+        </div>
+
+        <div class="modal-buttons">
+            <button class="btn btn-secondary" onclick="closeSettings()">Abbrechen</button>
+            <button class="btn btn-primary" onclick="saveSettings()">Speichern</button>
+        </div>
+    </div>
+</div>
+
+<!-- QR Modal -->
+<div class="qr-modal-overlay" id="qrModal" onclick="closeQRModal(event)">
+    <div class="qr-modal" onclick="event.stopPropagation()">
+        <h3 id="qrModalTitle"></h3>
+        <div class="qr-modal-code" id="qrModalCode"></div>
+        <div class="qr-modal-url" id="qrModalUrl"></div>
+        <div class="qr-modal-actions">
+            <button class="btn btn-primary btn-sm" onclick="copyModalUrl()">URL kopieren</button>
+            <button class="btn btn-secondary btn-sm" onclick="closeQRModal()">Schlie&szlig;en</button>
+        </div>
+    </div>
+</div>
+
+<!-- Deploy Success Modal -->
+<div class="deploy-success-overlay" id="deploySuccessModal" onclick="closeDeploySuccess(event)">
+    <div class="deploy-success-modal" onclick="event.stopPropagation()">
+        <div class="deploy-success-icon">&#10003;</div>
+        <h3>Erfolgreich deployt!</h3>
+        <p class="deploy-success-filename" id="deploySuccessFilename"></p>
+        <div class="deploy-success-qr" id="deploySuccessQR"></div>
+        <div class="deploy-success-url" id="deploySuccessUrl"></div>
+        <div class="deploy-success-actions">
+            <button class="btn btn-primary btn-sm" onclick="copyDeployUrl()">URL kopieren</button>
+            <button class="btn btn-secondary btn-sm" onclick="enlargeDeployQR()">QR vergr&ouml;&szlig;ern</button>
+            <button class="btn btn-secondary btn-sm" onclick="closeDeploySuccess()">Schlie&szlig;en</button>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+
+    <!-- Setup Banner -->
+    <div class="setup-banner" id="setupBanner" style="display:none;">
+        Bitte zuerst die GitHub-Einstellungen konfigurieren.
+        <button class="btn btn-primary btn-sm" onclick="openSettings()">Jetzt einrichten</button>
+    </div>
+
+    <!-- Status Message -->
+    <div class="status" id="statusMsg"></div>
+
+    <!-- Editor -->
+    <div class="editor-section">
+        <h2>Editor</h2>
+        <div class="filename-row">
+            <input type="text" id="filename" placeholder="dateiname (ohne .html)">
+            <span>.html</span>
+        </div>
+        <textarea id="editor"></textarea>
+
+        <!-- Description fields -->
+        <div class="desc-box" id="descBox">
+            <div class="desc-row">
+                <div>
+                    <label for="descFach">Fach</label>
+                    <input type="text" id="descFach" placeholder="z.B. BWR, Englisch, Mathematik">
+                </div>
+                <div>
+                    <label for="descStufe">Jahrgangsstufe</label>
+                    <input type="text" id="descStufe" placeholder="z.B. 7, 8–10">
+                </div>
+                <div>
+                    <label for="descKategorie">Kategorie</label>
+                    <select id="descKategorie">
+                        <option value="">—</option>
+                        <option value="BWR">BWR</option>
+                        <option value="Wirtschaft & Recht">Wirtschaft &amp; Recht</option>
+                        <option value="Mathematik">Mathematik</option>
+                        <option value="Englisch">Englisch</option>
+                        <option value="Franz&ouml;sisch">Franz&ouml;sisch</option>
+                        <option value="Deutsch">Deutsch</option>
+                        <option value="Naturwissenschaften">Naturwissenschaften</option>
+                        <option value="Geographie">Geographie</option>
+                        <option value="Sport">Sport</option>
+                        <option value="Informatik">Informatik</option>
+                        <option value="Tools">Tools</option>
+                        <option value="Sonstiges">Sonstiges</option>
+                    </select>
+                </div>
+            </div>
+            <div>
+                <label for="descLernbereich">Lernbereich</label>
+                <select id="descLernbereich">
+                    <option value="">&mdash; Kein Lernbereich &mdash;</option>
+                </select>
+            </div>
+            <label for="descText">Beschreibung</label>
+            <textarea id="descText" placeholder="Kurze Beschreibung der App..."></textarea>
+        </div>
+
+        <div class="editor-buttons">
+            <button class="btn btn-secondary" onclick="showPreview()">Vorschau</button>
+            <button class="btn btn-primary" id="aiDescBtn" onclick="generateDescription()">KI-Beschreibung</button>
+            <button class="btn btn-success" id="deployBtn" onclick="deploy()">Deploy</button>
+            <button class="btn btn-secondary" id="cancelEditBtn" style="display:none;" onclick="cancelEdit()">Bearbeitung abbrechen</button>
+        </div>
+    </div>
+
+    <!-- Preview -->
+    <div class="preview-section" id="previewSection">
+        <h2>Vorschau
+            <button class="btn btn-secondary btn-sm" onclick="closePreview()" style="margin-left:0.5rem;">Schlie&szlig;en</button>
+        </h2>
+        <iframe class="preview-frame" id="previewFrame" sandbox="allow-scripts allow-same-origin"></iframe>
+    </div>
+
+    <!-- App List -->
+    <div class="app-list-section">
+        <div class="app-list-header">
+            <h2>Deployte Apps <span class="app-count" id="appCount"></span></h2>
+            <div class="app-list-controls">
+                <div class="view-toggle">
+                    <button id="viewListBtn" class="active" onclick="setView('list')">Liste</button>
+                    <button id="viewLehrplanBtn" onclick="setView('lehrplan')">Lehrplan</button>
+                </div>
+                <button class="btn btn-secondary btn-sm" onclick="loadApps()">&#8635; Aktualisieren</button>
+            </div>
+        </div>
+        <div class="filter-bar">
+            <input type="text" id="filterSearch" placeholder="Suchen..." oninput="filterApps()">
+            <select id="filterFach" onchange="filterApps()">
+                <option value="">Alle F&auml;cher</option>
+            </select>
+            <select id="sortOrder" onchange="filterApps()">
+                <option value="newest">Neueste zuerst</option>
+                <option value="oldest">&Auml;lteste zuerst</option>
+                <option value="name-az">Name A–Z</option>
+                <option value="name-za">Name Z–A</option>
+                <option value="fach">Nach Fach</option>
+            </select>
+        </div>
+        <div id="appList">
+            <div class="app-list-empty">Lade Apps...</div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // ----- Constants -----
+    const KATEGORIEN = [
+        'BWR', 'Wirtschaft & Recht', 'Mathematik', 'Englisch', 'Französisch',
+        'Deutsch', 'Naturwissenschaften', 'Geographie', 'Sport', 'Informatik',
+        'Tools', 'Sonstiges'
+    ];
+
+    const KATEGORIE_ICONS = {
+        'BWR': '\u{1F4CA}',
+        'Wirtschaft & Recht': '\u{2696}\u{FE0F}',
+        'Mathematik': '\u{2795}',
+        'Englisch': '\u{1F1EC}\u{1F1E7}',
+        'Französisch': '\u{1F1EB}\u{1F1F7}',
+        'Deutsch': '\u{1F4DD}',
+        'Naturwissenschaften': '\u{1F52C}',
+        'Geographie': '\u{1F30D}',
+        'Sport': '\u{26BD}',
+        'Informatik': '\u{1F4BB}',
+        'Tools': '\u{1F527}',
+        'Sonstiges': '\u{1F4C1}'
+    };
+
+    const FACH_TO_KATEGORIE = {
+        'BWR': 'BWR',
+        'WR': 'Wirtschaft & Recht',
+        'Wirtschaft': 'Wirtschaft & Recht',
+        'Wirtschaft und Recht': 'Wirtschaft & Recht',
+        'Mathematik': 'Mathematik',
+        'Mathe': 'Mathematik',
+        'Englisch': 'Englisch',
+        'Französisch': 'Französisch',
+        'Deutsch': 'Deutsch',
+        'Physik': 'Naturwissenschaften',
+        'Biologie': 'Naturwissenschaften',
+        'Chemie': 'Naturwissenschaften',
+        'Geographie': 'Geographie',
+        'Erdkunde': 'Geographie',
+        'Sport': 'Sport',
+        'Informatik': 'Informatik',
+        'IT': 'Informatik',
+        'Tool': 'Tools',
+        'Tools': 'Tools',
+        'Fächerübergreifend': 'Sonstiges'
+    };
+
+    const LEHRPLAN = {
+      'BwR': {
+        label: 'Betriebswirtschaftslehre / Rechnungswesen',
+        icon: '\u{1F4CA}',
+        gruppen: [
+          {
+            id: 'BwR7-IIIa', label: '7. Jahrgangsstufe (WPF IIIa)',
+            lernbereiche: [
+              { id: 'BwR7-IIIa-1', name: 'Wirtschaftliches Handeln im privaten Haushalt', stichworte: 'Familienhaushalt, Einnahmen/Ausgaben, Zahlungsverkehr, Prozentrechnung' },
+              { id: 'BwR7-IIIa-2', name: 'Wirtschaftliches Handeln im Unternehmen', stichworte: 'Unternehmensziele, Standortfaktoren, Rechtsformen, Produktionsfaktoren' },
+              { id: 'BwR7-IIIa-3', name: 'Einf\u00fchrung in die Gesch\u00e4ftsbuchf\u00fchrung', stichworte: 'Inventur, Bilanz, Bestandskonten, Buchungssatz, Umsatzsteuer' },
+              { id: 'BwR7-IIIa-4', name: 'Buchhalterische Erfassung des Produktionsprozesses', stichworte: 'Werkstoffarten, Angebotsvergleich, Erfolgskonten, Beschaffung, Absatz' }
+            ]
+          },
+          {
+            id: 'BwR7-II', label: '7. Jahrgangsstufe (WPF II)',
+            lernbereiche: [
+              { id: 'BwR7-II-1', name: 'Wirtschaftliches Handeln im privaten Haushalt', stichworte: 'Familienhaushalt, Einnahmen/Ausgaben, Zahlungsverkehr, Infografiken, Prozentrechnung' },
+              { id: 'BwR7-II-2', name: 'Wirtschaftliches Handeln im Unternehmen', stichworte: 'Unternehmensziele, Gesch\u00e4ftsidee, Businessplan, Standortfaktoren, Rechtsformen' },
+              { id: 'BwR7-II-3', name: 'Einf\u00fchrung in die Gesch\u00e4ftsbuchf\u00fchrung', stichworte: 'Inventur, Bilanz, Bestandskonten, Buchungssatz, Umsatzsteuer' },
+              { id: 'BwR7-II-4', name: 'Buchhalterische Erfassung des Produktionsprozesses', stichworte: 'Werkstoffarten, Angebotsvergleich, Erfolgskonten, Beschaffung, Absatz' },
+              { id: 'BwR7-II-5', name: 'Strukturierung der Gesch\u00e4ftsbuchf\u00fchrung', stichworte: 'Er\u00f6ffnung, laufende Buchungen, GUV, SBK, Eigenkapital, Inventurdifferenzen' }
+            ]
+          },
+          {
+            id: 'BwR8-IIIa', label: '8. Jahrgangsstufe (WPF IIIa)',
+            lernbereiche: [
+              { id: 'BwR8-IIIa-1', name: 'Strukturierung der Gesch\u00e4ftsbuchf\u00fchrung', stichworte: 'Kontenplan, Er\u00f6ffnungsbilanz, Gesch\u00e4ftsgang, GUV, SBK' },
+              { id: 'BwR8-IIIa-2', name: 'Beschaffung und Absatz', stichworte: 'Einkaufskalkulation, Verkaufskalkulation, Skonto, Bezugskosten, R\u00fccksendungen, Preispolitik' },
+              { id: 'BwR8-IIIa-3', name: 'Anlagen und Finanzierung', stichworte: 'Anschaffungskosten, lineare Abschreibung, Bankkredit, Zinsrechnung, effektiver Zinssatz' },
+              { id: 'BwR8-IIIa-4', name: 'Personalbereich und Unternehmereinkommen', stichworte: 'Entgeltabrechnung, Brutto/Netto, Sozialversicherung, Privatentnahmen' }
+            ]
+          },
+          {
+            id: 'BwR8-II', label: '8. Jahrgangsstufe (WPF II)',
+            lernbereiche: [
+              { id: 'BwR8-II-1', name: 'Vertiefte Strukturierung der Gesch\u00e4ftsbuchf\u00fchrung', stichworte: 'Kontenplan, Er\u00f6ffnungsbilanz, beleggest\u00fctzter Gesch\u00e4ftsgang, Jahresabschluss' },
+              { id: 'BwR8-II-2', name: 'Beschaffung und Einsatz von Werkstoffen', stichworte: 'Beschaffungsplanung, Einkaufskalkulation, Bezugskosten, R\u00fccksendungen, Bestandsver\u00e4nderungen' },
+              { id: 'BwR8-II-3', name: 'Aspekte des Marketings', stichworte: 'Marketingziele, Produktpolitik, Preispolitik, Kommunikationspolitik, Vertriebspolitik' },
+              { id: 'BwR8-II-4', name: 'Verkauf von Fertigerzeugnissen', stichworte: 'Verkaufskalkulation, Differenzkalkulation, Ausgangsrechnungen, R\u00fccksendungen' },
+              { id: 'BwR8-II-5', name: 'Personalbereich', stichworte: 'Personalbeschaffung, Arbeitsformen, Entgeltabrechnung, Brutto/Netto, Sozialversicherung' },
+              { id: 'BwR8-II-6', name: 'Unternehmen und Staat', stichworte: 'Steuerarten, Gewerbesteuer, Umsatzsteuer, Geb\u00fchren, Wettbewerbsrecht' }
+            ]
+          },
+          {
+            id: 'BwR9-II', label: '9. Jahrgangsstufe (WPF II)',
+            lernbereiche: [
+              { id: 'BwR9-II-1', name: 'Unternehmensf\u00fchrung und Einkommen des Unternehmers', stichworte: 'F\u00fchrungsstile, Organisationsstruktur, Unternehmerlohn, Privatentnahmen, Eigenkapitalver\u00e4nderung' },
+              { id: 'BwR9-II-2', name: 'Anlagenbereich', stichworte: 'Abschreibung, AfA, Investitionsrechnung, Anschaffungskosten, GWG, Reparaturen, Versicherungen' },
+              { id: 'BwR9-II-3', name: 'M\u00f6glichkeiten der Finanzierung', stichworte: 'Eigenfinanzierung, Fremdfinanzierung, Bankkredit, Disagio, Darlehensarten, effektiver Zinssatz, Leasing, Factoring' },
+              { id: 'BwR9-II-4', name: 'Kapitalanlage', stichworte: 'Geldanlageformen, magisches Dreieck, B\u00f6rse, Aktienindizes, Wertpapiere, Dividende' },
+              { id: 'BwR9-II-5', name: 'Ausfall und Bewertung von Forderungen', stichworte: 'Insolvenz, Mahnverfahren, Forderungsausfall, Einzelwertberichtigung, Pauschalwertberichtigung' }
+            ]
+          },
+          {
+            id: 'BwR10-II', label: '10. Jahrgangsstufe (WPF II)',
+            lernbereiche: [
+              { id: 'BwR10-II-1', name: 'Periodenrichtige Erfolgsermittlung und R\u00fcckstellungen', stichworte: 'Abgrenzung, ARA, PRA, R\u00fcckstellungen, Aufl\u00f6sung' },
+              { id: 'BwR10-II-2', name: 'Unternehmensabschluss und Auswertung', stichworte: 'Bilanz, GUV, Kennzahlen, Barliquidit\u00e4t, Eigenkapitalrentabilit\u00e4t, Anlagendeckung' },
+              { id: 'BwR10-II-3', name: 'Vollkostenrechnung', stichworte: 'BAB, Kostenarten, Kostenstellen, Kostentr\u00e4ger, Zuschlagskalkulation, Gemeinkosten' },
+              { id: 'BwR10-II-4', name: 'Teilkostenrechnung', stichworte: 'Variable/fixe Kosten, Deckungsbeitrag, Break-even, Programmplanung, Make-or-buy, Preisuntergrenze' }
+            ]
+          }
+        ]
+      },
+      'WR': {
+        label: 'Wirtschaft und Recht',
+        icon: '\u{2696}\u{FE0F}',
+        gruppen: [
+          {
+            id: 'WR8-II', label: '8. Jahrgangsstufe (WPF II)',
+            lernbereiche: [
+              { id: 'WR8-II-1', name: 'Grundz\u00fcge des Wirtschaftens auf dem G\u00fctermarkt', stichworte: '\u00d6konomisches Prinzip, Angebot/Nachfrage, Gleichgewichtspreis, Wirtschaftskreislauf, Marktformen' },
+              { id: 'WR8-II-2', name: 'Verbraucherschutz und verantwortungsbewusstes Verbraucherverhalten', stichworte: 'Nachhaltigkeit, Verbraucherberatung, Marketingstrategien, E-Commerce, Social Media' },
+              { id: 'WR8-II-3', name: 'Der Jugendliche in unserer Rechtsordnung', stichworte: 'Rechtsordnung, Rechtsquellen, Gesch\u00e4ftsf\u00e4higkeit, Deliktf\u00e4higkeit, Jugendschutz' },
+              { id: 'WR8-II-4', name: 'Privatrechtliche Regelungen', stichworte: 'Eigentum, Besitz, Kaufvertrag, Pflichtverletzungen, Vertr\u00e4ge des Alltags, Zivilprozess' },
+              { id: 'WR8-II-5', name: 'Berufliche Orientierung', stichworte: 'Arbeitsmarkt, Arbeitslosigkeit, Bundesagentur f\u00fcr Arbeit, Berufswahl, Aus- und Weiterbildung' }
+            ]
+          },
+          {
+            id: 'WR9-I/III', label: '9. Jahrgangsstufe (WPF I/III)',
+            lernbereiche: [
+              { id: 'WR9-I/III-1', name: 'Berufliche Orientierung', stichworte: 'Arbeitsmarkt, Arbeitslosigkeit, Berufswahl, Bewerbung, Berufsausbildungsvertrag, Jugendarbeitsschutz' },
+              { id: 'WR9-I/III-2', name: 'Wirtschaftliches Handeln in der Sozialen Marktwirtschaft', stichworte: '\u00d6konomisches Prinzip, Angebot/Nachfrage, Gleichgewichtspreis, Wirtschaftskreislauf, Sozialversicherung' },
+              { id: 'WR9-I/III-3', name: 'Verbraucherschutz und verantwortungsbewusstes Verbraucherverhalten', stichworte: 'Nachhaltigkeit, Geldanlage, Zahlungsverkehr, E-Commerce, Social Media, \u00dcberschuldung' },
+              { id: 'WR9-I/III-4', name: 'Grundz\u00fcge des Rechts', stichworte: 'Rechtsordnung, Gesch\u00e4ftsf\u00e4higkeit, Kaufvertrag, Eigentum, Strafrecht, Jugendstrafrecht' }
+            ]
+          },
+          {
+            id: 'WR9-II', label: '9. Jahrgangsstufe (WPF II)',
+            lernbereiche: [
+              { id: 'WR9-II-1', name: 'Ausbildung und Beruf', stichworte: 'Berufswahl, Bewerbung, Berufsausbildungsvertrag, Arbeitsschutz, K\u00fcndigung, Mitbestimmung, Tarifvertrag' },
+              { id: 'WR9-II-2', name: 'Geld- und Kapitalmarkt', stichworte: 'Bankensystem, Geldanlage, B\u00f6rse, Aktienindizes, \u00dcberschuldung, Altersvorsorge' },
+              { id: 'WR9-II-3', name: 'Soziale Marktwirtschaft', stichworte: 'Wirtschaftsordnungen, Sozialversicherung, Solidarprinzip, Wettbewerb' },
+              { id: 'WR9-II-4', name: 'Partnerschaft und Erbfall', stichworte: 'Eherecht, Familienrecht, Erbrecht, Testament' },
+              { id: 'WR9-II-5', name: 'Strafrecht', stichworte: 'Strafbarkeit, Strafverfahren, Jugendstrafrecht, Ordnungswidrigkeit, Haftpflicht' }
+            ]
+          }
+        ]
+      }
+    };
+
+    // ----- State -----
+    let editor;
+    let editingSha = null;
+    let editingFilename = null;
+    let descriptions = {};
+    let descriptionsSha = null;
+    let allAppFiles = [];
+    let currentView = 'list';
+    let openLehrplanNodes = new Set();
+    let deploySuccessUrl = '';
+
+    // ----- Init -----
+    document.addEventListener('DOMContentLoaded', () => {
+        editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
+            mode: 'htmlmixed',
+            theme: 'dracula',
+            lineNumbers: true,
+            lineWrapping: true,
+            tabSize: 2,
+            indentWithTabs: false,
+            autoCloseBrackets: true
+        });
+
+        editor.setValue('<!DOCTYPE html>\n<html lang="de">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>Meine App</title>\n  <style>\n    body { font-family: sans-serif; padding: 2rem; }\n  </style>\n</head>\n<body>\n  <h1>Hallo Welt!</h1>\n\n  <script>\n    // Dein JavaScript hier\n  <\/script>\n</body>\n</html>');
+
+        if (!getConfig().token) {
+            document.getElementById('setupBanner').style.display = 'block';
+        } else {
+            loadDescriptions().then(() => {
+                migrateCategories();
+                loadApps();
+            });
+        }
+    });
+
+    // ----- Settings -----
+    function getConfig() {
+        return {
+            username: localStorage.getItem('rsb_username') || '',
+            repo: localStorage.getItem('rsb_repo') || 'rsb-webapps',
+            token: localStorage.getItem('rsb_token') || '',
+            claudeKey: localStorage.getItem('rsb_claude_key') || ''
+        };
+    }
+
+    function openSettings() {
+        const cfg = getConfig();
+        document.getElementById('inputUsername').value = cfg.username;
+        document.getElementById('inputRepo').value = cfg.repo;
+        document.getElementById('inputToken').value = cfg.token;
+        document.getElementById('inputClaudeKey').value = cfg.claudeKey;
+        document.getElementById('settingsModal').classList.add('active');
+    }
+
+    function closeSettings() {
+        document.getElementById('settingsModal').classList.remove('active');
+    }
+
+    function saveSettings() {
+        const username = document.getElementById('inputUsername').value.trim();
+        const repo = document.getElementById('inputRepo').value.trim();
+        const token = document.getElementById('inputToken').value.trim();
+        const claudeKey = document.getElementById('inputClaudeKey').value.trim();
+
+        if (!username || !repo || !token) {
+            alert('Bitte mindestens GitHub-Username, Repo und PAT ausfüllen.');
+            return;
+        }
+
+        localStorage.setItem('rsb_username', username);
+        localStorage.setItem('rsb_repo', repo);
+        localStorage.setItem('rsb_token', token);
+        localStorage.setItem('rsb_claude_key', claudeKey);
+
+        closeSettings();
+        document.getElementById('setupBanner').style.display = 'none';
+        showStatus('Einstellungen gespeichert!', 'success');
+        loadDescriptions().then(() => {
+            migrateCategories();
+            loadApps();
+        });
+    }
+
+    // ----- GitHub API -----
+    function apiHeaders() {
+        const cfg = getConfig();
+        return {
+            'Authorization': `Bearer ${cfg.token}`,
+            'Accept': 'application/vnd.github+json',
+            'X-GitHub-Api-Version': '2022-11-28'
+        };
+    }
+
+    function apiBase() {
+        const cfg = getConfig();
+        return `https://api.github.com/repos/${cfg.username}/${cfg.repo}/contents/apps`;
+    }
+
+    function repoApiBase() {
+        const cfg = getConfig();
+        return `https://api.github.com/repos/${cfg.username}/${cfg.repo}/contents`;
+    }
+
+    function pagesUrl(filename) {
+        const cfg = getConfig();
+        return `https://${cfg.username}.github.io/${cfg.repo}/apps/${filename}`;
+    }
+
+    // ----- Descriptions -----
+    async function loadDescriptions() {
+        const cfg = getConfig();
+        if (!cfg.token) return;
+
+        try {
+            const resp = await fetch(`${repoApiBase()}/descriptions.json`, { headers: apiHeaders() });
+            if (!resp.ok) return;
+            const data = await resp.json();
+            descriptionsSha = data.sha;
+            descriptions = JSON.parse(decodeURIComponent(escape(atob(data.content.replace(/\n/g, '')))));
+        } catch (e) {
+            // descriptions.json doesn't exist yet, that's fine
+        }
+    }
+
+    async function saveDescriptions() {
+        const cfg = getConfig();
+        if (!cfg.token) return;
+
+        const body = {
+            message: 'Update descriptions.json',
+            content: btoa(unescape(encodeURIComponent(JSON.stringify(descriptions, null, 2))))
+        };
+
+        if (descriptionsSha) {
+            body.sha = descriptionsSha;
+        }
+
+        try {
+            const resp = await fetch(`${repoApiBase()}/descriptions.json`, {
+                method: 'PUT',
+                headers: { ...apiHeaders(), 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            if (resp.ok) {
+                const data = await resp.json();
+                descriptionsSha = data.content.sha;
+            }
+        } catch (e) {
+            console.error('Fehler beim Speichern der Beschreibungen:', e);
+        }
+    }
+
+    // ----- Category Migration -----
+    function migrateCategories() {
+        let changed = false;
+        for (const [filename, desc] of Object.entries(descriptions)) {
+            if (!desc.kategorie && desc.fach) {
+                const mapped = FACH_TO_KATEGORIE[desc.fach];
+                if (mapped) {
+                    desc.kategorie = mapped;
+                    changed = true;
+                }
+            }
+        }
+        if (changed) {
+            saveDescriptions();
+        }
+    }
+
+    // ----- Load Apps -----
+    async function loadApps() {
+        const cfg = getConfig();
+        if (!cfg.token) return;
+
+        const listEl = document.getElementById('appList');
+        listEl.innerHTML = '<div class="app-list-empty">Lade Apps...</div>';
+
+        try {
+            const resp = await fetch(apiBase(), { headers: apiHeaders() });
+
+            if (resp.status === 404) {
+                listEl.innerHTML = '<div class="app-list-empty">Noch keine Apps deployt.</div>';
+                document.getElementById('appCount').textContent = '';
+                return;
+            }
+
+            if (!resp.ok) throw new Error(`API-Fehler: ${resp.status}`);
+
+            const files = await resp.json();
+            const htmlFiles = Array.isArray(files)
+                ? files.filter(f => f.name.endsWith('.html') || f.name.endsWith('.htm'))
+                : [];
+
+            // Fetch last commit date for sorting by newest
+            const cfg2 = getConfig();
+            try {
+                const commitsResp = await fetch(
+                    `https://api.github.com/repos/${cfg2.username}/${cfg2.repo}/commits?path=apps&per_page=100`,
+                    { headers: apiHeaders() }
+                );
+                if (commitsResp.ok) {
+                    const commits = await commitsResp.json();
+                    const dateMap = {};
+                    for (const commit of commits) {
+                        const date = commit.commit.committer.date;
+                        const msg = commit.commit.message;
+                        for (const f of htmlFiles) {
+                            if (msg.includes(f.name) && !dateMap[f.name]) {
+                                dateMap[f.name] = date;
+                            }
+                        }
+                    }
+                    htmlFiles.forEach(f => { f._date = dateMap[f.name] || '2000-01-01'; });
+                }
+            } catch (e) {
+                htmlFiles.forEach((f, i) => { f._date = '2000-01-01'; });
+            }
+
+            allAppFiles = htmlFiles;
+
+            buildFachFilter();
+            renderApps();
+        } catch (err) {
+            listEl.innerHTML = `<div class="app-list-empty" style="color:#991b1b;">Fehler: ${err.message}</div>`;
+        }
+    }
+
+    function buildFachFilter() {
+        const faecher = new Set();
+        allAppFiles.forEach(f => {
+            const desc = descriptions[f.name];
+            if (desc && desc.fach) faecher.add(desc.fach);
+        });
+
+        const select = document.getElementById('filterFach');
+        const current = select.value;
+        select.innerHTML = '<option value="">Alle F\u00e4cher</option>';
+        [...faecher].sort().forEach(fach => {
+            const opt = document.createElement('option');
+            opt.value = fach;
+            opt.textContent = fach;
+            select.appendChild(opt);
+        });
+        select.value = current;
+    }
+
+    function filterApps() {
+        renderApps();
+    }
+
+    // ----- Render Apps -----
+    function getFilteredApps() {
+        const searchTerm = document.getElementById('filterSearch').value.toLowerCase();
+        const fachFilter = document.getElementById('filterFach').value;
+
+        let filtered = allAppFiles.filter(f => {
+            const desc = descriptions[f.name];
+            const nameMatch = f.name.toLowerCase().includes(searchTerm);
+            const descMatch = desc && (
+                (desc.beschreibung || '').toLowerCase().includes(searchTerm) ||
+                (desc.fach || '').toLowerCase().includes(searchTerm) ||
+                (desc.kategorie || '').toLowerCase().includes(searchTerm)
+            );
+
+            if (searchTerm && !nameMatch && !descMatch) return false;
+            if (fachFilter && (!desc || desc.fach !== fachFilter)) return false;
+            return true;
+        });
+
+        // Sort
+        const sortOrder = document.getElementById('sortOrder').value;
+        filtered.sort((a, b) => {
+            switch (sortOrder) {
+                case 'newest': return (b._date || '').localeCompare(a._date || '');
+                case 'oldest': return (a._date || '').localeCompare(b._date || '');
+                case 'name-az': return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+                case 'name-za': return b.name.toLowerCase().localeCompare(a.name.toLowerCase());
+                case 'fach':
+                    const fa = (descriptions[a.name]?.fach || 'ZZZ').toLowerCase();
+                    const fb = (descriptions[b.name]?.fach || 'ZZZ').toLowerCase();
+                    return fa.localeCompare(fb) || a.name.localeCompare(b.name);
+                default: return 0;
+            }
+        });
+
+        return filtered;
+    }
+
+    function renderApps() {
+        const filtered = getFilteredApps();
+        document.getElementById('appCount').textContent = `(${filtered.length} von ${allAppFiles.length})`;
+
+        const listEl = document.getElementById('appList');
+        if (filtered.length === 0) {
+            listEl.innerHTML = '<div class="app-list-empty">Keine Apps gefunden.</div>';
+            return;
+        }
+
+        if (currentView === 'lehrplan') {
+            renderLehrplanView();
+        } else {
+            renderListView(filtered);
+        }
+    }
+
+    function formatDate(isoString) {
+        if (!isoString || isoString.startsWith('2000-01-01')) return '';
+        const d = new Date(isoString);
+        if (isNaN(d)) return '';
+        const dd = String(d.getDate()).padStart(2, '0');
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const yyyy = d.getFullYear();
+        return `${dd}.${mm}.${yyyy}`;
+    }
+
+    function timeAgo(isoString) {
+        if (!isoString || isoString.startsWith('2000-01-01')) return '';
+        const d = new Date(isoString);
+        if (isNaN(d)) return '';
+        const seconds = Math.floor((Date.now() - d.getTime()) / 1000);
+        if (seconds < 60) return 'gerade eben';
+        const minutes = Math.floor(seconds / 60);
+        if (minutes < 60) return `vor ${minutes} ${minutes === 1 ? 'Minute' : 'Minuten'}`;
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) return `vor ${hours} ${hours === 1 ? 'Stunde' : 'Stunden'}`;
+        const days = Math.floor(hours / 24);
+        if (days < 30) return `vor ${days} ${days === 1 ? 'Tag' : 'Tagen'}`;
+        const months = Math.floor(days / 30);
+        if (months < 12) return `vor ${months} ${months === 1 ? 'Monat' : 'Monaten'}`;
+        const years = Math.floor(months / 12);
+        return `vor ${years} ${years === 1 ? 'Jahr' : 'Jahren'}`;
+    }
+
+    function getLernbereichName(lbId) {
+        if (!lbId) return '';
+        for (const fach of Object.values(LEHRPLAN)) {
+            for (const gruppe of fach.gruppen) {
+                for (const lb of gruppe.lernbereiche) {
+                    if (lb.id === lbId) return lb.name;
+                }
+            }
+        }
+        return '';
+    }
+
+    function createAppItemHTML(file) {
+        const url = pagesUrl(file.name);
+        const desc = descriptions[file.name];
+
+        let descHtml = '';
+        if (desc) {
+            descHtml = '<div class="app-item-desc">';
+            if (desc.fach) descHtml += `<span class="badge badge-fach">${esc(desc.fach)}</span>`;
+            if (desc.stufe) descHtml += `<span class="badge badge-stufe">Jgst. ${esc(desc.stufe)}</span>`;
+            const lbName = getLernbereichName(desc.lernbereich);
+            if (lbName) {
+                descHtml += `<span class="badge badge-kategorie" title="${esc(desc.lernbereich)}">${esc(lbName)}</span>`;
+            } else if (desc.kategorie) {
+                descHtml += `<span class="badge badge-kategorie badge-kategorie-editable" onclick="editKategorie('${esc(file.name)}', this)" title="Klicken zum \u00c4ndern">${esc(desc.kategorie)}</span>`;
+            }
+            if (desc.beschreibung) descHtml += ` ${esc(desc.beschreibung)}`;
+            descHtml += '</div>';
+        }
+
+        return `
+            <div class="app-item">
+                <div class="app-item-info">
+                    <div class="app-item-name">
+                        <a href="${url}" target="_blank">${esc(file.name)}</a>
+                    </div>
+                    ${descHtml}
+                    ${formatDate(file._date) ? `<div class="app-item-date">${formatDate(file._date)} · ${timeAgo(file._date)}</div>` : ''}
+                </div>
+                <div class="app-item-actions">
+                    <button class="btn btn-secondary btn-sm" onclick="openQRModal('${esc(file.name)}', '${url}')">QR</button>
+                    <button class="btn btn-primary btn-sm" onclick="editApp('${esc(file.name)}')">Bearbeiten</button>
+                    <button class="btn btn-danger btn-sm" onclick="confirmDelete('${esc(file.name)}', '${file.sha}')">L\u00f6schen</button>
+                </div>
+            </div>
+        `;
+    }
+
+    function renderListView(filtered) {
+        const listEl = document.getElementById('appList');
+        listEl.innerHTML = '';
+        filtered.forEach(file => {
+            const itemDiv = document.createElement('div');
+            itemDiv.innerHTML = createAppItemHTML(file);
+            listEl.appendChild(itemDiv);
+        });
+    }
+
+    function renderLehrplanView() {
+        const listEl = document.getElementById('appList');
+        const searchTerm = document.getElementById('filterSearch').value.toLowerCase();
+        listEl.innerHTML = '';
+
+        // Build a lookup: lernbereich-id -> [files]
+        const lbMap = {};
+        const unassigned = [];
+        allAppFiles.forEach(file => {
+            const desc = descriptions[file.name];
+            if (!desc) return;
+            const fach = (desc.fach || '').toUpperCase();
+            const isBwrWr = fach.includes('BWR') || fach.includes('WR');
+            if (!isBwrWr) return;
+
+            // Apply search filter
+            if (searchTerm) {
+                const nameMatch = file.name.toLowerCase().includes(searchTerm);
+                const descMatch = (desc.beschreibung || '').toLowerCase().includes(searchTerm) ||
+                    (desc.fach || '').toLowerCase().includes(searchTerm);
+                if (!nameMatch && !descMatch) return;
+            }
+
+            if (desc.lernbereich) {
+                if (!lbMap[desc.lernbereich]) lbMap[desc.lernbereich] = [];
+                lbMap[desc.lernbereich].push(file);
+            } else {
+                unassigned.push(file);
+            }
+        });
+
+        let totalShown = 0;
+
+        for (const [fachKey, fachData] of Object.entries(LEHRPLAN)) {
+            const fachId = `lp-${fachKey}`;
+            const isFachOpen = openLehrplanNodes.has(fachId);
+
+            // Count apps in this Fach
+            let fachAppCount = 0;
+            fachData.gruppen.forEach(g => {
+                g.lernbereiche.forEach(lb => {
+                    fachAppCount += (lbMap[lb.id] || []).length;
+                });
+            });
+
+            if (searchTerm && fachAppCount === 0) continue;
+            totalShown += fachAppCount;
+
+            const fachDiv = document.createElement('div');
+            fachDiv.className = 'folder-section lehrplan-level-1';
+            let fachInner = `
+                <div class="folder-header" onclick="toggleLehrplanNode('${fachId}')">
+                    <span class="folder-arrow">${isFachOpen ? '\u25BC' : '\u25B6'}</span>
+                    <span class="folder-icon">${fachData.icon}</span>
+                    <span class="folder-name">${esc(fachData.label)}</span>
+                    <span class="folder-count">(${fachAppCount})</span>
+                </div>
+            `;
+
+            if (isFachOpen) {
+                fachInner += '<div class="folder-content">';
+                for (const gruppe of fachData.gruppen) {
+                    const gruppeId = `lp-${gruppe.id}`;
+                    const isGruppeOpen = openLehrplanNodes.has(gruppeId);
+
+                    // Count apps in this Gruppe
+                    let gruppeAppCount = 0;
+                    gruppe.lernbereiche.forEach(lb => {
+                        gruppeAppCount += (lbMap[lb.id] || []).length;
+                    });
+
+                    if (searchTerm && gruppeAppCount === 0) continue;
+
+                    const gruppeDiv = `
+                        <div class="folder-section lehrplan-level-2">
+                            <div class="folder-header" onclick="toggleLehrplanNode('${gruppeId}')">
+                                <span class="folder-arrow">${isGruppeOpen ? '\u25BC' : '\u25B6'}</span>
+                                <span class="folder-icon">\u{1F4D6}</span>
+                                <span class="folder-name">${esc(gruppe.label)}</span>
+                                <span class="folder-count">(${gruppeAppCount})</span>
+                            </div>
+                            ${isGruppeOpen ? '<div class="folder-content">' + gruppe.lernbereiche.map((lb, idx) => {
+                                const lbId = `lp-${lb.id}`;
+                                const isLbOpen = openLehrplanNodes.has(lbId);
+                                const apps = lbMap[lb.id] || [];
+
+                                if (searchTerm && apps.length === 0) return '';
+
+                                return `
+                                    <div class="folder-section lehrplan-level-3">
+                                        <div class="folder-header" onclick="toggleLehrplanNode('${lbId}')">
+                                            <span class="folder-arrow">${isLbOpen ? '\u25BC' : '\u25B6'}</span>
+                                            <span class="folder-icon">\u{1F4CB}</span>
+                                            <span class="folder-name">LB ${idx + 1}: ${esc(lb.name)}</span>
+                                            <span class="folder-count">(${apps.length})</span>
+                                            <span class="lehrplan-stichworte" title="${esc(lb.stichworte)}">${esc(lb.stichworte)}</span>
+                                        </div>
+                                        ${isLbOpen ? '<div class="folder-content">' + (apps.length > 0 ? apps.map(f => createAppItemHTML(f)).join('') : '<div class="app-list-empty">Keine Apps zugeordnet.</div>') + '</div>' : ''}
+                                    </div>
+                                `;
+                            }).join('') + '</div>' : ''}
+                        </div>
+                    `;
+                    fachInner += gruppeDiv;
+                }
+                fachInner += '</div>';
+            }
+
+            fachDiv.innerHTML = fachInner;
+            listEl.appendChild(fachDiv);
+        }
+
+        // Show unassigned BWR/WR apps
+        if (unassigned.length > 0) {
+            const unId = 'lp-unassigned';
+            const isUnOpen = openLehrplanNodes.has(unId);
+            const unDiv = document.createElement('div');
+            unDiv.className = 'folder-section lehrplan-level-1';
+            unDiv.innerHTML = `
+                <div class="folder-header" onclick="toggleLehrplanNode('${unId}')">
+                    <span class="folder-arrow">${isUnOpen ? '\u25BC' : '\u25B6'}</span>
+                    <span class="folder-icon">\u{1F4C2}</span>
+                    <span class="folder-name">Nicht zugeordnet</span>
+                    <span class="folder-count">(${unassigned.length})</span>
+                </div>
+                ${isUnOpen ? '<div class="folder-content">' + unassigned.map(f => createAppItemHTML(f)).join('') + '</div>' : ''}
+            `;
+            listEl.appendChild(unDiv);
+            totalShown += unassigned.length;
+        }
+
+        document.getElementById('appCount').textContent = `(${totalShown} von ${allAppFiles.length})`;
+
+        if (totalShown === 0 && !searchTerm) {
+            listEl.innerHTML = '<div class="app-list-empty">Keine BWR/WR-Apps gefunden.</div>';
+        }
+    }
+
+    function toggleLehrplanNode(nodeId) {
+        if (openLehrplanNodes.has(nodeId)) {
+            openLehrplanNodes.delete(nodeId);
+        } else {
+            openLehrplanNodes.add(nodeId);
+        }
+        renderApps();
+    }
+
+    function setView(view) {
+        currentView = view;
+        document.getElementById('viewListBtn').classList.toggle('active', view === 'list');
+        document.getElementById('viewLehrplanBtn').classList.toggle('active', view === 'lehrplan');
+
+        // In Lehrplan view, hide Fach/Sort filters (search stays visible)
+        const fachFilter = document.getElementById('filterFach');
+        const sortFilter = document.getElementById('sortOrder');
+        if (view === 'lehrplan') {
+            fachFilter.style.display = 'none';
+            sortFilter.style.display = 'none';
+        } else {
+            fachFilter.style.display = '';
+            sortFilter.style.display = '';
+        }
+
+        renderApps();
+    }
+
+    function editKategorie(filename, badgeEl) {
+        // Replace badge with inline select
+        const current = descriptions[filename]?.kategorie || '';
+        let opts = '<option value="">\u2014</option>';
+        KATEGORIEN.forEach(k => {
+            const sel = (k === current) ? ' selected' : '';
+            opts += `<option value="${esc(k)}"${sel}>${esc(k)}</option>`;
+        });
+        const select = document.createElement('select');
+        select.className = 'badge badge-kategorie';
+        select.style.cssText = 'cursor:pointer; padding:0.1rem 0.3rem; font-size:0.75rem;';
+        select.innerHTML = opts;
+        badgeEl.replaceWith(select);
+        select.focus();
+
+        const save = async () => {
+            const newKat = select.value;
+            if (!descriptions[filename]) descriptions[filename] = {};
+            descriptions[filename].kategorie = newKat;
+            await saveDescriptions();
+            renderApps();
+        };
+        select.addEventListener('change', save);
+        select.addEventListener('blur', save);
+    }
+
+    function populateLernbereichSelect(selectedLb) {
+        const select = document.getElementById('descLernbereich');
+        const fach = document.getElementById('descFach').value.trim().toUpperCase();
+        select.innerHTML = '<option value="">\u2014 Kein Lernbereich \u2014</option>';
+
+        // Determine which LEHRPLAN keys match the fach
+        const matchingKeys = [];
+        if (fach.includes('BWR')) matchingKeys.push('BwR');
+        if (fach.includes('WR')) matchingKeys.push('WR');
+
+        matchingKeys.forEach(key => {
+            const fachData = LEHRPLAN[key];
+            if (!fachData) return;
+            fachData.gruppen.forEach(gruppe => {
+                const optgroup = document.createElement('optgroup');
+                optgroup.label = `${fachData.icon} ${gruppe.label}`;
+                gruppe.lernbereiche.forEach(lb => {
+                    const opt = document.createElement('option');
+                    opt.value = lb.id;
+                    opt.textContent = `${lb.id}: ${lb.name}`;
+                    if (lb.id === selectedLb) opt.selected = true;
+                    optgroup.appendChild(opt);
+                });
+                select.appendChild(optgroup);
+            });
+        });
+    }
+
+    // Update Lernbereich dropdown when Fach changes
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('descFach').addEventListener('input', () => {
+            populateLernbereichSelect(document.getElementById('descLernbereich').value);
+        });
+    });
+
+    function esc(str) {
+        const d = document.createElement('div');
+        d.textContent = str;
+        return d.innerHTML;
+    }
+
+    // ----- QR Modal -----
+    let currentModalUrl = '';
+
+    function openQRModal(filename, url) {
+        currentModalUrl = url;
+        document.getElementById('qrModalTitle').textContent = filename;
+        const codeDiv = document.getElementById('qrModalCode');
+        codeDiv.innerHTML = '';
+        new QRCode(codeDiv, { text: url, width: 200, height: 200 });
+        document.getElementById('qrModalUrl').innerHTML = `<a href="${url}" target="_blank">${url}</a>`;
+        document.getElementById('qrModal').classList.add('active');
+    }
+
+    function closeQRModal(event) {
+        if (event && event.target !== document.getElementById('qrModal')) return;
+        document.getElementById('qrModal').classList.remove('active');
+    }
+
+    function copyModalUrl() {
+        navigator.clipboard.writeText(currentModalUrl).then(() => {
+            showStatus('URL kopiert!', 'success');
+        });
+    }
+
+    // ----- Deploy Success Modal -----
+    function showDeploySuccess(filename, url) {
+        deploySuccessUrl = url;
+        document.getElementById('deploySuccessFilename').textContent = filename;
+
+        const qrDiv = document.getElementById('deploySuccessQR');
+        qrDiv.innerHTML = '';
+        new QRCode(qrDiv, { text: url, width: 150, height: 150 });
+
+        document.getElementById('deploySuccessUrl').innerHTML = `<a href="${url}" target="_blank">${url}</a>`;
+
+        document.getElementById('deploySuccessModal').classList.add('active');
+    }
+
+    function closeDeploySuccess(event) {
+        if (event && event.target !== document.getElementById('deploySuccessModal')) return;
+        document.getElementById('deploySuccessModal').classList.remove('active');
+    }
+
+    function copyDeployUrl() {
+        navigator.clipboard.writeText(deploySuccessUrl).then(() => {
+            showStatus('URL kopiert!', 'success');
+        });
+    }
+
+    function enlargeDeployQR() {
+        const filename = document.getElementById('deploySuccessFilename').textContent;
+        document.getElementById('deploySuccessModal').classList.remove('active');
+        openQRModal(filename, deploySuccessUrl);
+    }
+
+    // ESC key handler
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            document.getElementById('deploySuccessModal').classList.remove('active');
+            document.getElementById('qrModal').classList.remove('active');
+            document.getElementById('settingsModal').classList.remove('active');
+        }
+    });
+
+    // ----- Deploy -----
+    async function deploy() {
+        const cfg = getConfig();
+        if (!cfg.token) {
+            openSettings();
+            return;
+        }
+
+        let filename = document.getElementById('filename').value.trim();
+        if (!filename) {
+            showStatus('Bitte einen Dateinamen eingeben.', 'error');
+            return;
+        }
+
+        // Sanitize filename
+        filename = filename.replace(/\.html$/i, '');
+        filename = filename.replace(/[^a-zA-Z0-9_\-]/g, '-').toLowerCase();
+        if (!filename) {
+            showStatus('Ung\u00fcltiger Dateiname.', 'error');
+            return;
+        }
+        filename += '.html';
+
+        const content = editor.getValue();
+        if (!content.trim()) {
+            showStatus('Der Editor ist leer.', 'error');
+            return;
+        }
+
+        const deployBtn = document.getElementById('deployBtn');
+        deployBtn.disabled = true;
+        deployBtn.innerHTML = '<span class="spinner"></span>Deploying...';
+
+        try {
+            const body = {
+                message: `Deploy ${filename}`,
+                content: btoa(unescape(encodeURIComponent(content)))
+            };
+
+            // If editing an existing file, include the SHA
+            if (editingSha && editingFilename === filename) {
+                body.sha = editingSha;
+                body.message = `Update ${filename}`;
+            } else {
+                try {
+                    const checkResp = await fetch(`${apiBase()}/${filename}`, { headers: apiHeaders() });
+                    if (checkResp.ok) {
+                        const existing = await checkResp.json();
+                        body.sha = existing.sha;
+                        body.message = `Update ${filename}`;
+                    }
+                } catch (e) {}
+            }
+
+            const resp = await fetch(`${apiBase()}/${filename}`, {
+                method: 'PUT',
+                headers: { ...apiHeaders(), 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+
+            if (!resp.ok) {
+                const errData = await resp.json();
+                throw new Error(errData.message || `HTTP ${resp.status}`);
+            }
+
+            // Save description if fields are filled
+            const fach = document.getElementById('descFach').value.trim();
+            const stufe = document.getElementById('descStufe').value.trim();
+            const beschreibung = document.getElementById('descText').value.trim();
+            const kategorie = document.getElementById('descKategorie').value;
+            const lernbereich = document.getElementById('descLernbereich').value;
+
+            if (fach || stufe || beschreibung || kategorie) {
+                const descData = { ...descriptions[filename], fach, stufe, beschreibung, kategorie };
+                if (lernbereich) {
+                    descData.lernbereich = lernbereich;
+                }
+                descriptions[filename] = descData;
+                await saveDescriptions();
+            }
+
+            const url = pagesUrl(filename);
+
+            // Show deploy success modal instead of just status + QR
+            showDeploySuccess(filename, url);
+            cancelEdit();
+            loadApps();
+
+            // Auto-generate description in background (fire and forget)
+            autoGenerateDescriptionIfNeeded(filename, content);
+
+        } catch (err) {
+            showStatus(`Deploy fehlgeschlagen: ${err.message}`, 'error');
+        } finally {
+            deployBtn.disabled = false;
+            deployBtn.textContent = 'Deploy';
+        }
+    }
+
+    // ----- Lehrplan Prompt Helper -----
+    function getLehrplanPromptText() {
+        const lines = [];
+        for (const [key, fach] of Object.entries(LEHRPLAN)) {
+            fach.gruppen.forEach(g => {
+                g.lernbereiche.forEach(lb => {
+                    lines.push(`${lb.id}: ${lb.name} (${lb.stichworte})`);
+                });
+            });
+        }
+        return lines.join('\n');
+    }
+
+    // ----- Auto KI-Beschreibung -----
+    function autoGenerateDescriptionIfNeeded(filename, content) {
+        const cfg = getConfig();
+        if (!cfg.claudeKey) return;
+        if (descriptions[filename]?.beschreibung) return;
+
+        // Fire and forget - runs in background
+        (async () => {
+            try {
+                const resp = await fetch('https://api.anthropic.com/v1/messages', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-api-key': cfg.claudeKey,
+                        'anthropic-version': '2023-06-01',
+                        'anthropic-dangerous-direct-browser-access': 'true'
+                    },
+                    body: JSON.stringify({
+                        model: 'claude-sonnet-4-5-20250929',
+                        max_tokens: 300,
+                        messages: [{
+                            role: 'user',
+                            content: `Analysiere diese HTML-Webapp f\u00fcr Sch\u00fcler einer bayerischen Realschule. Antworte NUR mit einem JSON-Objekt (ohne Markdown, ohne Code-Block), mit genau diesen f\u00fcnf Feldern:
+- "fach": Das Unterrichtsfach (z.B. "BWR", "Englisch", "Mathematik", "WR", "Physik", "Biologie", "Franz\u00f6sisch", "Deutsch", "Informatik", "Geographie", "Sport", "F\u00e4cher\u00fcbergreifend" oder "Tool")
+- "stufe": Die passende Jahrgangsstufe(n) (z.B. "7", "8\u201310", "5\u20136")
+- "beschreibung": Eine kurze Beschreibung der App in einem Satz (max. 80 Zeichen, auf Deutsch)
+- "kategorie": Eine der folgenden Kategorien: ${KATEGORIEN.join(', ')}
+- "lernbereich": Falls BWR oder WR: der passende Lernbereich-Code aus der Liste unten, sonst ""
+
+Verf\u00fcgbare Lernbereiche:
+${getLehrplanPromptText()}
+
+HTML-Code:
+${content.substring(0, 6000)}`
+                        }]
+                    })
+                });
+
+                if (!resp.ok) return;
+
+                const data = await resp.json();
+                let text = data.content[0].text.trim();
+                text = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+                const parsed = JSON.parse(text);
+
+                // Reload descriptions to avoid race conditions
+                await loadDescriptions();
+
+                const descData = {
+                    ...descriptions[filename],
+                    fach: parsed.fach || '',
+                    stufe: parsed.stufe || '',
+                    beschreibung: parsed.beschreibung || '',
+                    kategorie: parsed.kategorie || 'Sonstiges'
+                };
+                if (parsed.lernbereich) descData.lernbereich = parsed.lernbereich;
+                descriptions[filename] = descData;
+
+                await saveDescriptions();
+                buildFachFilter();
+                renderApps();
+            } catch (e) {
+                console.log('Auto-Beschreibung fehlgeschlagen:', e);
+            }
+        })();
+    }
+
+    // ----- Claude AI Description (manual) -----
+    async function generateDescription() {
+        const cfg = getConfig();
+        if (!cfg.claudeKey) {
+            showStatus('Bitte zuerst einen Anthropic API Key in den Einstellungen hinterlegen.', 'error');
+            openSettings();
+            return;
+        }
+
+        const content = editor.getValue();
+        if (!content.trim()) {
+            showStatus('Der Editor ist leer \u2013 bitte zuerst Code einf\u00fcgen.', 'error');
+            return;
+        }
+
+        const btn = document.getElementById('aiDescBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner spinner-dark"></span>Generiere...';
+
+        // Show description box
+        document.getElementById('descBox').classList.add('active');
+
+        try {
+            const resp = await fetch('https://api.anthropic.com/v1/messages', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-api-key': cfg.claudeKey,
+                    'anthropic-version': '2023-06-01',
+                    'anthropic-dangerous-direct-browser-access': 'true'
+                },
+                body: JSON.stringify({
+                    model: 'claude-sonnet-4-5-20250929',
+                    max_tokens: 300,
+                    messages: [{
+                        role: 'user',
+                        content: `Analysiere diese HTML-Webapp f\u00fcr Sch\u00fcler einer bayerischen Realschule. Antworte NUR mit einem JSON-Objekt (ohne Markdown, ohne Code-Block), mit genau diesen f\u00fcnf Feldern:
+- "fach": Das Unterrichtsfach (z.B. "BWR", "Englisch", "Mathematik", "WR", "Physik", "Biologie", "Franz\u00f6sisch", "Deutsch", "Informatik", "Geographie", "Sport", "F\u00e4cher\u00fcbergreifend" oder "Tool")
+- "stufe": Die passende Jahrgangsstufe(n) (z.B. "7", "8\u201310", "5\u20136")
+- "beschreibung": Eine kurze Beschreibung der App in einem Satz (max. 80 Zeichen, auf Deutsch)
+- "kategorie": Eine der folgenden Kategorien: ${KATEGORIEN.join(', ')}
+- "lernbereich": Falls BWR oder WR: der passende Lernbereich-Code aus der Liste unten, sonst ""
+
+Verf\u00fcgbare Lernbereiche:
+${getLehrplanPromptText()}
+
+HTML-Code:
+${content.substring(0, 6000)}`
+                    }]
+                })
+            });
+
+            if (!resp.ok) {
+                const err = await resp.json();
+                throw new Error(err.error?.message || `HTTP ${resp.status}`);
+            }
+
+            const data = await resp.json();
+            let text = data.content[0].text.trim();
+            text = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+            const parsed = JSON.parse(text);
+
+            document.getElementById('descFach').value = parsed.fach || '';
+            document.getElementById('descStufe').value = parsed.stufe || '';
+            document.getElementById('descText').value = parsed.beschreibung || '';
+            document.getElementById('descKategorie').value = parsed.kategorie || '';
+            populateLernbereichSelect(parsed.lernbereich || '');
+
+            showStatus('Beschreibung generiert! Bitte pr\u00fcfen und bei Bedarf anpassen.', 'success');
+        } catch (err) {
+            showStatus(`KI-Beschreibung fehlgeschlagen: ${err.message}`, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'KI-Beschreibung';
+        }
+    }
+
+    // ----- Edit App -----
+    async function editApp(filename) {
+        showStatus('Lade Datei...', 'info');
+
+        try {
+            const resp = await fetch(`${apiBase()}/${filename}`, { headers: apiHeaders() });
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+
+            const data = await resp.json();
+            const content = decodeURIComponent(escape(atob(data.content.replace(/\n/g, ''))));
+
+            editor.setValue(content);
+            document.getElementById('filename').value = filename.replace(/\.html?$/i, '');
+            editingSha = data.sha;
+            editingFilename = filename;
+
+            // Load existing description if available
+            const desc = descriptions[filename];
+            if (desc) {
+                document.getElementById('descFach').value = desc.fach || '';
+                document.getElementById('descStufe').value = desc.stufe || '';
+                document.getElementById('descText').value = desc.beschreibung || '';
+                document.getElementById('descKategorie').value = desc.kategorie || '';
+                populateLernbereichSelect(desc.lernbereich || '');
+                document.getElementById('descBox').classList.add('active');
+            } else {
+                document.getElementById('descFach').value = '';
+                document.getElementById('descStufe').value = '';
+                document.getElementById('descText').value = '';
+                document.getElementById('descKategorie').value = '';
+                populateLernbereichSelect('');
+                document.getElementById('descBox').classList.remove('active');
+            }
+
+            document.getElementById('cancelEditBtn').style.display = 'inline-block';
+            showStatus(`Bearbeite: ${filename}`, 'info');
+            document.querySelector('.editor-section').scrollIntoView({ behavior: 'smooth' });
+        } catch (err) {
+            showStatus(`Fehler beim Laden: ${err.message}`, 'error');
+        }
+    }
+
+    function cancelEdit() {
+        editingSha = null;
+        editingFilename = null;
+        document.getElementById('cancelEditBtn').style.display = 'none';
+        document.getElementById('filename').value = '';
+        document.getElementById('descFach').value = '';
+        document.getElementById('descStufe').value = '';
+        document.getElementById('descText').value = '';
+        document.getElementById('descKategorie').value = '';
+        document.getElementById('descLernbereich').innerHTML = '<option value="">\u2014 Kein Lernbereich \u2014</option>';
+        document.getElementById('descBox').classList.remove('active');
+    }
+
+    // ----- Delete App -----
+    async function confirmDelete(filename, sha) {
+        if (!confirm(`"${filename}" wirklich l\u00f6schen?`)) return;
+        await deleteApp(filename, sha);
+    }
+
+    async function deleteApp(filename, sha) {
+        try {
+            showStatus(`L\u00f6sche ${filename}...`, 'info');
+
+            const resp = await fetch(`${apiBase()}/${filename}`, {
+                method: 'DELETE',
+                headers: { ...apiHeaders(), 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message: `Delete ${filename}`,
+                    sha: sha
+                })
+            });
+
+            if (!resp.ok) {
+                const errData = await resp.json();
+                throw new Error(errData.message || `HTTP ${resp.status}`);
+            }
+
+            // Remove description
+            if (descriptions[filename]) {
+                delete descriptions[filename];
+                await saveDescriptions();
+            }
+
+            showStatus(`${filename} gel\u00f6scht.`, 'success');
+            loadApps();
+        } catch (err) {
+            showStatus(`Fehler beim L\u00f6schen: ${err.message}`, 'error');
+        }
+    }
+
+    // ----- Preview -----
+    function showPreview() {
+        const content = editor.getValue();
+        const section = document.getElementById('previewSection');
+        const frame = document.getElementById('previewFrame');
+
+        section.classList.add('active');
+        frame.srcdoc = content;
+        section.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function closePreview() {
+        const section = document.getElementById('previewSection');
+        section.classList.remove('active');
+        document.getElementById('previewFrame').srcdoc = '';
+    }
+
+    // ----- Status -----
+    function showStatus(message, type) {
+        const el = document.getElementById('statusMsg');
+        el.textContent = message;
+        el.className = `status active ${type}`;
+
+        if (type === 'success') {
+            setTimeout(() => { el.classList.remove('active'); }, 4000);
+        }
+    }
+</script>
+
+</body>
+</html>
