@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Taschengeld-Quiz</title>
+<style>
+  :root { --bg:#F4F4F6; --dark:#191919; --teal:#4AAEBF; --indigo:#4F55AB; --orange:#E76A28; --green:#2E7D46; --red:#C0392B; --muted:#6B6B75; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html, body { height:100%; }
+  body { font-family: Arial, Helvetica, sans-serif; background:var(--bg); color:var(--dark); overflow:hidden; }
+  .screen { position:absolute; inset:0; display:none; flex-direction:column; padding:4vh 5vw; }
+  .screen.on { display:flex; }
+  .dark { background:var(--dark); color:#fff; }
+  .tag { font-size:1.6vw; font-weight:bold; letter-spacing:.3em; color:var(--teal); text-transform:uppercase; }
+  .center { justify-content:center; align-items:center; text-align:center; }
+  h1 { font-size:6vw; margin:2vh 0; }
+  .sub { font-size:2.4vw; color:#CFCFD6; }
+  .keys { margin-top:6vh; font-size:1.5vw; color:#8A8A94; line-height:1.8; }
+  kbd { display:inline-block; padding:.1em .5em; border:1px solid #55555E; border-radius:.3em; background:#2C2C33; color:#fff; font-family:inherit; }
+  .top { display:flex; justify-content:space-between; align-items:center; }
+  .timer { display:flex; align-items:center; gap:1vw; font-size:2.6vw; font-weight:bold; }
+  .ring { width:6vw; height:6vw; }
+  .ring circle { fill:none; stroke-width:10; }
+  .q { font-size:3.6vw; font-weight:bold; margin:4vh 0 4vh; line-height:1.25; }
+  .opts { display:grid; grid-template-columns:repeat(3, 1fr); gap:2vw; flex:1; max-height:40vh; }
+  .opt { background:#fff; border-radius:1.2vw; box-shadow:0 2px 8px rgba(0,0,0,.08); display:flex; flex-direction:column; align-items:center; justify-content:center; padding:2vh 1.5vw; border:.35vw solid transparent; transition:all .3s; }
+  .opt .l { width:7vw; height:7vw; border-radius:50%; color:#fff; font-size:4vw; font-weight:bold; display:flex; align-items:center; justify-content:center; margin-bottom:2vh; }
+  .opt .t { font-size:2.5vw; font-weight:bold; text-align:center; line-height:1.25; }
+  .opt:nth-child(1) .l { background:var(--teal); } .opt:nth-child(2) .l { background:var(--indigo); } .opt:nth-child(3) .l { background:var(--orange); }
+  .opt .corner { margin-top:1.5vh; font-size:1.5vw; font-weight:bold; letter-spacing:.2em; color:var(--muted); text-transform:uppercase; }
+  .opt.right { border-color:var(--green); background:#E7F3EA; }
+  .opt.wrong { opacity:.35; }
+  .expl { margin-top:3vh; min-height:12vh; font-size:2.2vw; line-height:1.4; background:#fff; border-radius:1vw; padding:2vh 2vw; visibility:hidden; }
+  .expl b { color:var(--green); }
+  .expl.on { visibility:visible; }
+  .hint { position:absolute; bottom:1.5vh; right:2vw; font-size:1.1vw; color:#9A9AA3; }
+  .paused { position:absolute; top:3vh; left:50%; transform:translateX(-50%); background:var(--orange); color:#fff; font-weight:bold; font-size:1.6vw; padding:.4em 1.2em; border-radius:2em; display:none; }
+  .progress { font-size:1.6vw; color:var(--muted); font-weight:bold; }
+  .btn { margin-top:5vh; background:var(--orange); color:#fff; border:none; font-size:2.4vw; font-weight:bold; padding:1.6vh 3vw; border-radius:3vw; cursor:pointer; font-family:inherit; }
+</style>
+</head>
+<body>
+
+<div id="start" class="screen dark center on">
+  <div class="tag">Gesamtzielkontrolle · BwR 7</div>
+  <h1>Taschengeld-Quiz</h1>
+  <div class="sub">6 Fragen · Stellt euch in die Ecke eurer Antwort: A, B oder C</div>
+  <button class="btn" onclick="next()">Los geht’s</button>
+  <div class="keys"><kbd>Leertaste</kbd> / <kbd>→</kbd> weiter &nbsp; · &nbsp; <kbd>←</kbd> zurück &nbsp; · &nbsp; <kbd>A</kbd> auflösen &nbsp; · &nbsp; <kbd>P</kbd> Pause &nbsp; · &nbsp; <kbd>F</kbd> Vollbild</div>
+</div>
+
+<div id="quiz" class="screen">
+  <div class="top">
+    <div><div class="tag" id="qtag">Frage 1</div><div class="progress" id="prog"></div></div>
+    <div class="timer"><svg class="ring" viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" stroke="#E3E3E8"/><circle id="arc" cx="50" cy="50" r="42" stroke="#4AAEBF" stroke-dasharray="264" stroke-dashoffset="0" transform="rotate(-90 50 50)" stroke-linecap="round"/></svg><span id="sec">20</span></div>
+  </div>
+  <div class="q" id="q"></div>
+  <div class="opts" id="opts"></div>
+  <div class="expl" id="expl"></div>
+  <div class="paused" id="paused">PAUSE</div>
+  <div class="hint">Geht in die Ecke eurer Antwort! · Leertaste: weiter · A: auflösen · P: Pause · F: Vollbild</div>
+</div>
+
+<div id="end" class="screen dark center">
+  <div class="tag">Geschafft!</div>
+  <h1>Gut gemacht!</h1>
+  <div class="sub">Merke: Summe der Einnahmen – Summe der Ausgaben = <span style="color:#E76A28;font-weight:bold">Restbetrag</span></div>
+  <div class="keys"><kbd>←</kbd> zurück zur letzten Frage</div>
+</div>
+
+<script>
+const TIME = 25; // Sekunden je Frage (inkl. Weg in die Ecke)
+const Q = [
+  { q: 'Wie bekommen 12-Jährige ihr Taschengeld meistens?', o: ['wöchentlich', 'monatlich', 'jährlich'], a: 1,
+    e: '<b>B – monatlich.</b> Ab etwa 10 Jahren wird Taschengeld meist monatlich gezahlt. Jüngere Kinder bekommen es eher wöchentlich, weil sie mit kleineren Beträgen besser planen können.' },
+  { q: 'Wie viel Taschengeld empfiehlt das Deutsche Jugendinstitut (2025) für 12- bis 13-Jährige?', o: ['5,00 € – 10,00 € im Monat', '20,00 € – 30,00 € im Monat', '50,00 € – 60,00 € im Monat'], a: 1,
+    e: '<b>B – 20,00 € bis 30,00 € im Monat.</b> Das ist eine Empfehlung, kein Anspruch. Wie viel es wirklich gibt, entscheiden die Eltern.' },
+  { q: 'Wovon hängt die Höhe des Taschengeldes NICHT ab?', o: ['vom Alter', 'vom Einkommen der Eltern', 'von der Körpergröße'], a: 2,
+    e: '<b>C – von der Körpergröße.</b> Die Höhe hängt u. a. vom Alter, vom Einkommen der Eltern, von der Zahl der Kinder und davon ab, was man selbst bezahlen muss.' },
+  { q: 'Lena hat Einnahmen von 40,00 € und Ausgaben von 32,50 €. Wie hoch ist ihr Restbetrag?', o: ['7,50 €', '8,50 €', '72,50 €'], a: 0,
+    e: '<b>A – 7,50 €.</b> 40,00 € – 32,50 € = 7,50 €. Wer 72,50 € gerechnet hat, hat addiert statt subtrahiert.' },
+  { q: 'Wie berechnet man im Taschengeldplaner den Restbetrag?', o: ['Einnahmen + Ausgaben', 'Einnahmen – Ausgaben', 'Ausgaben – Einnahmen'], a: 1,
+    e: '<b>B – Summe der Einnahmen – Summe der Ausgaben = Restbetrag.</b>' },
+  { q: 'Welcher Tipp hilft am besten, mit dem Taschengeld auszukommen?', o: ['Alles gleich am Anfang ausgeben', 'Gleich zu Beginn einen festen Betrag sparen', 'Sich Geld von Freunden leihen'], a: 1,
+    e: '<b>B – erst sparen, dann ausgeben.</b> Wer erst am Monatsende sparen will, hat meist nichts mehr übrig. Geld leihen führt schnell zu Schulden.' }
+];
+let i = -1, t = TIME, timer = null, paused = false, revealed = false;
+const $ = id => document.getElementById(id);
+function show(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('on')); $(id).classList.add('on'); }
+function render() {
+  const d = Q[i];
+  $('qtag').textContent = 'Frage ' + (i + 1);
+  $('prog').textContent = (i + 1) + ' von ' + Q.length;
+  $('q').textContent = d.q;
+  $('opts').innerHTML = d.o.map((o, k) => '<div class="opt"><div class="l">' + 'ABC'[k] + '</div><div class="t">' + o + '</div><div class="corner">Ecke ' + 'ABC'[k] + '</div></div>').join('');
+  $('expl').innerHTML = d.e; $('expl').classList.remove('on');
+  revealed = false; paused = false; $('paused').style.display = 'none';
+  t = TIME; tick(true);
+  clearInterval(timer); timer = setInterval(() => tick(false), 1000);
+}
+function tick(init) {
+  if (!init && !paused && !revealed) t--;
+  if (t <= 0) { t = 0; reveal(); }
+  $('sec').textContent = t;
+  const arc = $('arc');
+  arc.setAttribute('stroke-dashoffset', String(264 * (1 - t / TIME)));
+  arc.setAttribute('stroke', t <= 5 ? '#E76A28' : '#4AAEBF');
+}
+function reveal() {
+  if (i < 0 || i >= Q.length || revealed) return;
+  revealed = true; clearInterval(timer);
+  document.querySelectorAll('.opt').forEach((el, k) => el.classList.add(k === Q[i].a ? 'right' : 'wrong'));
+  $('expl').classList.add('on');
+}
+function next() {
+  if (i >= 0 && i < Q.length && !revealed) { reveal(); return; }
+  i++;
+  if (i >= Q.length) { i = Q.length; clearInterval(timer); show('end'); return; }
+  show('quiz'); render();
+}
+function prev() {
+  if (i <= 0) { i = -1; clearInterval(timer); show('start'); return; }
+  i = Math.min(i - 1, Q.length - 1); show('quiz'); render();
+}
+document.addEventListener('keydown', e => {
+  const k = e.key.toLowerCase();
+  if (k === ' ' || k === 'arrowright' || k === 'enter') { e.preventDefault(); next(); }
+  else if (k === 'arrowleft') prev();
+  else if (k === 'a') reveal();
+  else if (k === 'p' && i >= 0 && i < Q.length && !revealed) { paused = !paused; $('paused').style.display = paused ? 'block' : 'none'; }
+  else if (k === 'f') { if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {}); else document.exitFullscreen(); }
+});
+</script>
+</body>
+</html>
