@@ -1,1 +1,9 @@
-{}
+{
+  "quiztaschengeld.html": {
+    "fach": "BWR",
+    "stufe": "7",
+    "beschreibung": "Interaktives Quiz zum Taschengeld mit 6 Fragen und Bewegung im Raum",
+    "kategorie": "BWR",
+    "lernbereich": "BwR7-IIIa-1"
+  }
+}
